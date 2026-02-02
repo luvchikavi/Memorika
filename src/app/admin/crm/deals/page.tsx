@@ -726,7 +726,7 @@ function DealCard({
             <Phone className="w-4 h-4" />
           </a>
         )}
-        {deal.notes && <MessageSquare className="w-4 h-4" title={deal.notes} />}
+        {deal.notes && <span title={deal.notes}><MessageSquare className="w-4 h-4" /></span>}
         <span className="text-xs mr-auto flex items-center gap-1">
           <Calendar className="w-3 h-3" />
           {new Date(deal.createdAt).toLocaleDateString("he-IL", {
