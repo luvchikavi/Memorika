@@ -1,0 +1,524 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===================
+// CRM SYSTEM MODELS
+// ===================
+
+// Contact - Main customer/lead entity
+model Contact {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String   @unique
+  phone       String?
+  city        String?
+  source      String?  // איך הגיע: facebook, google, referral, organic, etc.
+  status      String   @default("active") // active, inactive, vip, blocked
+  type        String   @default("other") // alumni, interested, followers, patients, other
+  notes       String?
+  avatar      String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tags        ContactTag[]
+  leads       Lead[]
+  deals       Deal[]
+  activities  Activity[]
+  interactions Interaction[]
+  sentMessages SentMessage[]
+  payments    Payment[]
+  invoices    Invoice[]
+  paymentPlans PaymentPlan[]
+  recurringPayments RecurringPayment[]
+  paymentReminders PaymentReminder[]
+}
+
+// Tag - For segmenting contacts
+model Tag {
+  id       String   @id @default(cuid())
+  name     String   @unique
+  color    String   @default("#6B7280") // hex color
+
+  contacts ContactTag[]
+}
+
+// ContactTag - Many-to-many relation between Contact and Tag
+model ContactTag {
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId     String
+
+  assignedAt DateTime @default(now())
+
+  @@id([contactId, tagId])
+}
+
+// Lead - Sales lead tracking
+model Lead {
+  id          String   @id @default(cuid())
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId   String
+
+  status      String   @default("new") // new, contacted, in_talks, hot, cold, converted, lost
+  score       Int      @default(0) // Lead scoring 0-100
+  source      String?  // Specific campaign/ad source
+  campaign    String?  // Marketing campaign name
+  medium      String?  // utm_medium
+
+  product     Product? @relation(fields: [productId], references: [id])
+  productId   String?  // Interested in which product
+
+  assignedTo  String?  // Sales rep name/id
+  nextFollowUp DateTime?
+  lostReason  String?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  convertedAt DateTime?
+}
+
+// Deal - Sales transactions
+model Deal {
+  id          String   @id @default(cuid())
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId   String
+
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   String
+
+  status      String   @default("pending") // pending, paid, partially_paid, refunded, cancelled
+  amount      Float
+  currency    String   @default("ILS")
+  discount    Float    @default(0)
+  finalAmount Float    // amount - discount
+  paidAmount  Float    @default(0) // For tracking partial payments
+
+  paymentMethod String? // credit, paypal, bank_transfer, cash
+  paymentRef    String? // Payment reference/transaction ID
+
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  paidAt      DateTime?
+
+  // Payment relations
+  payments    Payment[]
+  paymentPlans PaymentPlan[]
+  paymentReminders PaymentReminder[]
+}
+
+// Product - Courses and products
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  nameHe      String?  // Hebrew name
+  description String?
+  price       Float
+  currency    String   @default("ILS")
+  category    String?  // course, ebook, coaching, bundle
+
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+
+  image       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       Lead[]
+  deals       Deal[]
+  cartAbandonment CartAbandonment[]
+  recurringPayments RecurringPayment[]
+}
+
+// Activity - All CRM activities log
+model Activity {
+  id          String   @id @default(cuid())
+  contact     Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId   String?
+
+  type        String   // call, email, meeting, note, task, status_change
+  title       String
+  description String?
+
+  dueAt       DateTime?
+  completedAt DateTime?
+
+  createdBy   String?  // User who created this
+
+  createdAt   DateTime @default(now())
+}
+
+// Interaction - Communication history
+model Interaction {
+  id          String   @id @default(cuid())
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId   String
+
+  type        String   // email_sent, email_opened, email_clicked, sms, whatsapp, call_inbound, call_outbound
+  subject     String?
+  content     String?
+
+  channel     String?  // email, sms, whatsapp, phone
+  direction   String   @default("outbound") // inbound, outbound
+
+  metadata    String?  // JSON string for extra data (email campaign id, etc.)
+
+  createdAt   DateTime @default(now())
+}
+
+// ===================
+// SALES FLOW MODELS
+// ===================
+
+// EmailSequence - Automated email sequences
+model EmailSequence {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  trigger     String   // lead_created, cart_abandoned, purchase_complete, etc.
+  isActive    Boolean  @default(true)
+
+  emails      EmailTemplate[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// EmailTemplate - Individual emails in a sequence
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  sequence    EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  sequenceId  String
+
+  name        String
+  subject     String
+  body        String   // HTML content
+
+  delayDays   Int      @default(0) // Days after trigger to send
+  delayHours  Int      @default(0) // Hours after trigger
+
+  order       Int      @default(0) // Order in sequence
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// CartAbandonment - Track abandoned carts
+model CartAbandonment {
+  id          String   @id @default(cuid())
+  email       String
+
+  product     Product? @relation(fields: [productId], references: [id])
+  productId   String?
+
+  cartData    String?  // JSON of cart contents
+  recoveryEmailsSent Int @default(0)
+
+  isRecovered Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  recoveredAt DateTime?
+}
+
+// Add relation to Product for CartAbandonment
+// (Note: Already defined above in the model)
+
+// ===================
+// ANALYTICS MODELS
+// ===================
+
+// PageView - Track page visits for lead scoring
+model PageView {
+  id          String   @id @default(cuid())
+  visitorId   String   // Anonymous visitor ID or contact email
+  page        String   // URL path
+  referrer    String?
+
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+
+  createdAt   DateTime @default(now())
+}
+
+// ConversionEvent - Track important events
+model ConversionEvent {
+  id          String   @id @default(cuid())
+  visitorId   String
+  eventType   String   // page_view, lead_magnet, add_to_cart, purchase, etc.
+  eventValue  Float?   // Monetary value if applicable
+
+  metadata    String?  // JSON for extra data
+
+  createdAt   DateTime @default(now())
+}
+
+// ===================
+// SOCIAL MEDIA / MESSAGING
+// ===================
+
+// SocialMediaSettings - Store API credentials and settings
+model SocialMediaSettings {
+  id          String   @id @default(cuid())
+  platform    String   @unique // whatsapp, instagram, facebook
+
+  isActive    Boolean  @default(false)
+
+  // WhatsApp Business API settings
+  phoneNumberId   String?  // WhatsApp phone number ID
+  businessAccountId String? // WhatsApp Business Account ID
+  accessToken     String?  // Meta access token (encrypted in production)
+
+  // Facebook/Instagram settings
+  pageId          String?  // Facebook Page ID
+  instagramId     String?  // Instagram Business Account ID
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// MessageTemplate - Reusable message templates
+model MessageTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  platform    String   // whatsapp, instagram, facebook, all
+  category    String   // welcome, reminder, promotion, payment, course_info, custom
+
+  content     String   // Message content with {{placeholders}}
+  mediaUrl    String?  // Optional image/video URL
+
+  // Target audience - JSON array of types: ["alumni", "interested", "followers", "patients", "other"]
+  // If null or empty, targets all contacts
+  targetAudience String? // JSON array of contact types
+
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sentMessages SentMessage[]
+}
+
+// SentMessage - Log of all sent messages
+model SentMessage {
+  id          String   @id @default(cuid())
+
+  contact     Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId   String?
+
+  template    MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  templateId  String?
+
+  platform    String   // whatsapp, instagram, facebook
+  recipient   String   // Phone number or social ID
+  content     String   // Actual sent content
+
+  status      String   @default("pending") // pending, sent, delivered, read, failed
+  externalId  String?  // WhatsApp/Meta message ID
+  errorMessage String?
+
+  sentAt      DateTime @default(now())
+  deliveredAt DateTime?
+  readAt      DateTime?
+}
+
+// ===================
+// PAYMENT SYSTEM MODELS
+// ===================
+
+// PaymentGatewaySettings - Store payment gateway credentials
+model PaymentGatewaySettings {
+  id            String   @id @default(cuid())
+  gateway       String   @unique // tranzila, cardcom, payplus, morning, bit, paybox
+  isActive      Boolean  @default(false)
+  isDefault     Boolean  @default(false)
+
+  // Credentials
+  terminalId    String?
+  apiKey        String?
+  apiSecret     String?
+  webhookSecret String?
+  settings      String?  // JSON for gateway-specific config
+
+  // Israeli tax settings
+  vatRate       Float    @default(17)
+  invoicePrefix String?
+  receiptPrefix String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Payment - Individual payment transactions
+model Payment {
+  id              String   @id @default(cuid())
+  dealId          String?
+  contactId       String
+
+  amount          Float
+  currency        String   @default("ILS")
+  paymentMethod   String   // credit_card, bank_transfer, bit, paybox, cash
+  gateway         String?
+
+  status          String   @default("pending") // pending, processing, completed, failed, refunded
+  transactionId   String?
+  authCode        String?
+  last4Digits     String?
+  cardBrand       String?
+
+  errorCode       String?
+  errorMessage    String?
+  gatewayResponse String?  // JSON
+
+  notes           String?
+
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  deal            Deal?    @relation(fields: [dealId], references: [id])
+  contact         Contact  @relation(fields: [contactId], references: [id])
+  invoice         Invoice?
+  paymentPlan     PaymentPlan? @relation(fields: [paymentPlanId], references: [id])
+  paymentPlanId   String?
+  recurringPayment RecurringPayment? @relation(fields: [recurringPaymentId], references: [id])
+  recurringPaymentId String?
+}
+
+// Invoice - Invoices and receipts
+model Invoice {
+  id             String   @id @default(cuid())
+  paymentId      String   @unique
+  contactId      String
+
+  invoiceNumber  String   @unique // INV-2024-0001
+  type           String   // invoice, receipt, tax_invoice
+
+  subtotal       Float
+  vatRate        Float    @default(17)
+  vatAmount      Float
+  totalAmount    Float
+
+  issueDate      DateTime @default(now())
+  dueDate        DateTime?
+
+  lineItems      String   // JSON array
+
+  // Customer details (stored for history)
+  customerName   String
+  customerEmail  String
+  customerPhone  String?
+  customerTaxId  String?
+
+  // Business details
+  businessName   String?
+  businessTaxId  String?
+
+  status         String   @default("draft") // draft, issued, sent, paid
+  pdfUrl         String?
+  sentAt         DateTime?
+
+  createdAt      DateTime @default(now())
+
+  payment        Payment  @relation(fields: [paymentId], references: [id])
+  contact        Contact  @relation(fields: [contactId], references: [id])
+}
+
+// PaymentPlan - Installment payment plans
+model PaymentPlan {
+  id                String   @id @default(cuid())
+  dealId            String
+  contactId         String
+
+  totalAmount       Float
+  currency          String   @default("ILS")
+  numberOfPayments  Int
+  paymentFrequency  String   @default("monthly") // weekly, biweekly, monthly
+
+  startDate         DateTime
+  nextPaymentDate   DateTime?
+
+  paidAmount        Float    @default(0)
+  paidInstallments  Int      @default(0)
+
+  status            String   @default("active") // active, completed, cancelled, paused
+
+  paymentMethod     String?
+  gateway           String?
+  savedCardToken    String?
+
+  createdAt         DateTime @default(now())
+  completedAt       DateTime?
+
+  deal              Deal     @relation(fields: [dealId], references: [id])
+  contact           Contact  @relation(fields: [contactId], references: [id])
+  payments          Payment[]
+}
+
+// RecurringPayment - Subscription/recurring payments
+model RecurringPayment {
+  id              String   @id @default(cuid())
+  contactId       String
+  productId       String?
+
+  name            String
+  amount          Float
+  currency        String   @default("ILS")
+  billingCycle    String   @default("monthly") // weekly, monthly, quarterly, yearly
+
+  startDate       DateTime
+  nextBillingDate DateTime?
+
+  status          String   @default("active") // active, paused, cancelled
+
+  paymentMethod   String
+  gateway         String?
+  savedCardToken  String?
+
+  totalCharges    Int      @default(0)
+  totalRevenue    Float    @default(0)
+
+  createdAt       DateTime @default(now())
+
+  contact         Contact  @relation(fields: [contactId], references: [id])
+  product         Product? @relation(fields: [productId], references: [id])
+  payments        Payment[]
+}
+
+// PaymentReminder - Payment due reminders
+model PaymentReminder {
+  id           String   @id @default(cuid())
+  dealId       String?
+  contactId    String
+
+  type         String   // payment_due, overdue, renewal
+  amount       Float?
+  dueDate      DateTime?
+
+  scheduledFor DateTime
+  sendVia      String   @default("email") // email, whatsapp, sms
+  status       String   @default("pending") // pending, sent, failed
+
+  sentAt       DateTime?
+
+  createdAt    DateTime @default(now())
+
+  deal         Deal?    @relation(fields: [dealId], references: [id])
+  contact      Contact  @relation(fields: [contactId], references: [id])
+}
