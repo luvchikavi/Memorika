@@ -18,6 +18,17 @@ Comprehensive payment system for Israeli market:
 - **Subscriptions**: Recurring payments with MRR tracking
 - **Reminders**: Payment due notifications
 
+### Task 16: Railway + Vercel Deployment Setup ✅
+Production deployment infrastructure ready:
+- **Vercel Config**: `vercel.json` with cron jobs for reminders and recurring payments
+- **Railway Config**: `railway.json` with PostgreSQL support
+- **CORS Middleware**: `src/middleware.ts` handling cross-origin requests
+- **Next.js Config**: Security headers, image optimization, www redirect
+- **Prisma Schemas**: SQLite for dev, PostgreSQL for production (`prisma/schema.postgres.prisma`)
+- **Health Check**: `/api/health` endpoint for monitoring
+- **Environment**: Comprehensive `.env.example` with all required variables
+- **Scripts**: `npm run setup:local` and `npm run setup:prod` for database setup
+
 ---
 
 ## Pending Tasks
@@ -136,65 +147,10 @@ Purchase and configure the domain www.memorika.co.il
 
 ---
 
-### Task 16: Railway + Vercel Deployment Setup
-Set up production deployment infrastructure with proper separation of concerns.
-
-**Architecture:**
-- Frontend: Vercel (Next.js)
-- Backend API: Vercel API routes
-- Database: Railway PostgreSQL (migrate from SQLite)
-
-**Vercel Setup:**
-1. Connect GitHub repo to Vercel
-2. Configure build settings for Next.js
-3. Set environment variables
-4. Configure custom domain (memorika.co.il)
-5. Set up preview deployments for PRs
-
-**Railway Setup:**
-1. Create Railway project
-2. Add PostgreSQL database
-3. Configure environment variables
-4. Set up automatic deployments from main branch
-
-**Database Migration:**
-1. Update Prisma schema for PostgreSQL
-2. Create migration scripts
-3. Set up DATABASE_URL for production
-4. Configure connection pooling (PgBouncer)
-
-**CORS Configuration:**
-- Configure allowed origins for production domain
-- Set up proper headers for API routes
-- Handle credentials for authenticated requests
-
-**Environment Variables:**
-```
-DATABASE_URL=postgresql://...
-NEXTAUTH_URL=https://memorika.co.il
-NEXTAUTH_SECRET=...
-NEXT_PUBLIC_API_URL=...
-```
-
-**Files to Create/Modify:**
-- `vercel.json` - Vercel configuration
-- `railway.json` - Railway configuration
-- `next.config.js` - Update for production
-- `middleware.ts` - CORS handling
-- `prisma/schema.prisma` - PostgreSQL provider
-
-**CI/CD Pipeline:**
-- Automatic deployments on push to main
-- Preview deployments for pull requests
-- Database migrations on deploy
-- Health checks and monitoring
-
----
-
 ## Recommended Implementation Order
 
-1. **Task 16** (Deployment) - Set up infrastructure first
-2. **Task 15** (Domain) - Can be done in parallel with Task 16
+1. ~~**Task 16** (Deployment) - Set up infrastructure first~~ ✅ DONE
+2. **Task 15** (Domain) - Purchase memorika.co.il domain
 3. **Task 14** (Dashboard) - Core feature for Keren's daily use
 4. **Task 13** (Campaigns) - Advanced marketing automation
 
