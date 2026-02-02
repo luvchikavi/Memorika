@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getGateway, getDefaultGateway, PaymentRequest } from "@/lib/payments/gateways";
+// Register gateway implementations
+import "@/lib/payments/gateways/tranzila";
+import "@/lib/payments/gateways/payplus";
 
 // POST process a card payment
 export async function POST(request: NextRequest) {

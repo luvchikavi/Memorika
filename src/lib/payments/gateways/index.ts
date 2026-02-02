@@ -142,6 +142,7 @@ export async function getDefaultGateway(): Promise<PaymentGateway | null> {
   return getGateway(settings.gateway);
 }
 
-// Re-export gateway implementations
-export { TranzilaGateway } from "./tranzila";
-export { PayPlusGateway } from "./payplus";
+// Gateway implementations are registered when imported
+// Import them in your API routes:
+// import "@/lib/payments/gateways/tranzila";
+// import "@/lib/payments/gateways/payplus";

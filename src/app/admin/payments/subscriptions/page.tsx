@@ -31,6 +31,7 @@ interface Product {
   id: string;
   name: string;
   nameHe: string | null;
+  price: number;
 }
 
 interface Payment {

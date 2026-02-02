@@ -324,7 +324,7 @@ export default function ProductsPage() {
             </div>
             <div className="flex gap-2">
               <Button
-                variant={filterCategory === null ? "default" : "outline"}
+                variant={filterCategory === null ? "primary" : "outline"}
                 size="sm"
                 onClick={() => setFilterCategory(null)}
               >
@@ -333,7 +333,7 @@ export default function ProductsPage() {
               {categories.map((cat) => (
                 <Button
                   key={cat.id}
-                  variant={filterCategory === cat.id ? "default" : "outline"}
+                  variant={filterCategory === cat.id ? "primary" : "outline"}
                   size="sm"
                   onClick={() => setFilterCategory(cat.id)}
                 >

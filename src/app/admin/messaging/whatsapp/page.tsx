@@ -35,6 +35,7 @@ interface Template {
   name: string;
   category: string;
   content: string;
+  platform: string;
 }
 
 interface Settings {
