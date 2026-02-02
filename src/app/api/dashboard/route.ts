@@ -1,98 +1,101 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-// GET dashboard data with all insights
+// GET dashboard data with product-focused insights
 export async function GET() {
   try {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const lastMonthStart = new Date(monthAgo.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Fetch all data in parallel for performance
     const [
-      // Stats
+      // Basic Stats
       totalContacts,
-      newLeadsThisWeek,
-      todayPayments,
-      yesterdayPayments,
-      monthlyRevenue,
-      lastMonthRevenue,
+      newContactsThisMonth,
+      newContactsLastMonth,
+      totalLeads,
+      convertedLeads,
+
+      // Products
+      products,
+
+      // Leads by product
+      leadsByProduct,
+
+      // Deals and Revenue
+      allDeals,
+      completedPayments,
+
+      // Subscriptions
       activeSubscriptions,
 
       // Priority Tasks
       followUpsDueToday,
       overduePayments,
       hotLeads,
-      expiringPlans,
 
       // Alerts
       coldLeads,
       stuckDeals,
       failedPayments,
-
-      // Activity Feed
-      recentPayments,
-      recentLeads,
-      recentContacts,
     ] = await Promise.all([
       // Total contacts
       db.contact.count(),
 
-      // New leads this week
-      db.lead.count({
+      // New contacts this month
+      db.contact.count({
+        where: { createdAt: { gte: monthAgo } },
+      }),
+
+      // New contacts last month
+      db.contact.count({
+        where: {
+          createdAt: { gte: lastMonthStart, lt: monthAgo },
+        },
+      }),
+
+      // Total leads
+      db.lead.count(),
+
+      // Converted leads
+      db.lead.count({ where: { status: "converted" } }),
+
+      // All products
+      db.product.findMany({
+        where: { isActive: true },
+        orderBy: { createdAt: "desc" },
+      }),
+
+      // Leads grouped by product (this week)
+      db.lead.groupBy({
+        by: ["productId"],
         where: {
           createdAt: { gte: weekAgo },
+          productId: { not: null },
         },
+        _count: { id: true },
       }),
 
-      // Today's payments (revenue)
-      db.payment.aggregate({
-        where: {
-          status: "completed",
-          completedAt: { gte: today },
-        },
-        _sum: { amount: true },
+      // All deals with product info
+      db.deal.findMany({
+        include: { product: true },
       }),
 
-      // Yesterday's payments
-      db.payment.aggregate({
-        where: {
-          status: "completed",
-          completedAt: {
-            gte: yesterday,
-            lt: today,
-          },
+      // Completed payments with deal/product info
+      db.payment.findMany({
+        where: { status: "completed" },
+        include: {
+          deal: { include: { product: true } },
         },
-        _sum: { amount: true },
-      }),
-
-      // Monthly revenue
-      db.payment.aggregate({
-        where: {
-          status: "completed",
-          completedAt: { gte: monthAgo },
-        },
-        _sum: { amount: true },
-      }),
-
-      // Last month revenue (for comparison)
-      db.payment.aggregate({
-        where: {
-          status: "completed",
-          completedAt: {
-            gte: new Date(monthAgo.getTime() - 30 * 24 * 60 * 60 * 1000),
-            lt: monthAgo,
-          },
-        },
-        _sum: { amount: true },
       }),
 
       // Active subscriptions (MRR)
       db.recurringPayment.findMany({
         where: { status: "active" },
-        select: { amount: true, billingCycle: true },
+        include: { product: true },
       }),
 
       // Follow-ups due today
@@ -104,14 +107,11 @@ export async function GET() {
           },
           status: { notIn: ["converted", "lost"] },
         },
-        include: {
-          contact: true,
-          product: true,
-        },
+        include: { contact: true, product: true },
         take: 10,
       }),
 
-      // Overdue payments (payment plans with missed dates)
+      // Overdue payments
       db.paymentPlan.findMany({
         where: {
           status: "active",
@@ -126,51 +126,29 @@ export async function GET() {
 
       // Hot leads
       db.lead.findMany({
-        where: {
-          status: "hot",
-        },
-        include: {
-          contact: true,
-          product: true,
-        },
+        where: { status: "hot" },
+        include: { contact: true, product: true },
         orderBy: { updatedAt: "desc" },
         take: 10,
       }),
 
-      // Expiring payment plans (fetch active and filter in JS)
-      db.paymentPlan.findMany({
-        where: {
-          status: "active",
-        },
-        include: {
-          contact: true,
-          deal: { include: { product: true } },
-        },
-      }),
-
-      // Cold leads (no activity in 7+ days)
+      // Cold leads
       db.lead.findMany({
         where: {
           status: { notIn: ["converted", "lost", "cold"] },
           updatedAt: { lt: weekAgo },
         },
-        include: {
-          contact: true,
-          product: true,
-        },
+        include: { contact: true, product: true },
         take: 10,
       }),
 
-      // Stuck deals (pending for more than 14 days)
+      // Stuck deals
       db.deal.findMany({
         where: {
           status: "pending",
           createdAt: { lt: new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000) },
         },
-        include: {
-          contact: true,
-          product: true,
-        },
+        include: { contact: true, product: true },
         take: 10,
       }),
 
@@ -187,88 +165,142 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 10,
       }),
-
-      // Recent payments (activity feed)
-      db.payment.findMany({
-        where: { status: "completed" },
-        include: {
-          contact: true,
-          deal: { include: { product: true } },
-        },
-        orderBy: { completedAt: "desc" },
-        take: 10,
-      }),
-
-      // Recent leads
-      db.lead.findMany({
-        include: {
-          contact: true,
-          product: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
-
-      // Recent contacts
-      db.contact.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
     ]);
 
-    // Filter expiring plans (last payment pending)
-    const filteredExpiringPlans = (expiringPlans as any[])
-      .filter((plan: any) => plan.paidInstallments >= plan.numberOfPayments - 1)
+    // Calculate product statistics
+    const productStats = products.map((product) => {
+      // New leads for this product this week
+      const productLeads = leadsByProduct.find((l) => l.productId === product.id);
+      const newLeadsThisWeek = productLeads?._count?.id || 0;
+
+      // Deals for this product
+      const productDeals = allDeals.filter((d) => d.productId === product.id);
+      const totalDeals = productDeals.length;
+      const paidDeals = productDeals.filter((d) => d.status === "paid").length;
+      const pendingDeals = productDeals.filter((d) => d.status === "pending").length;
+
+      // Revenue from this product
+      const productPayments = completedPayments.filter(
+        (p) => p.deal?.productId === product.id
+      );
+      const totalRevenue = productPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      // Conversion rate for this product
+      const conversionRate = totalDeals > 0 ? (paidDeals / totalDeals) * 100 : 0;
+
+      return {
+        id: product.id,
+        name: product.nameHe || product.name,
+        category: product.category,
+        price: product.price,
+        newLeadsThisWeek,
+        totalDeals,
+        paidDeals,
+        pendingDeals,
+        totalRevenue,
+        conversionRate: Math.round(conversionRate * 10) / 10,
+      };
+    });
+
+    // Sort by new leads and revenue
+    const topProductsByLeads = [...productStats]
+      .sort((a, b) => b.newLeadsThisWeek - a.newLeadsThisWeek)
       .slice(0, 5);
 
-    // Calculate MRR from active subscriptions
+    const topProductsByRevenue = [...productStats]
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .slice(0, 5);
+
+    // Calculate overall stats
+    const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+
+    const totalRevenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const thisMonthRevenue = completedPayments
+      .filter((p) => p.completedAt && new Date(p.completedAt) >= monthAgo)
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // MRR calculation
     const mrr = activeSubscriptions.reduce((sum, sub) => {
       const multiplier =
         sub.billingCycle === "weekly" ? 4 :
-        sub.billingCycle === "quarterly" ? 1/3 :
-        sub.billingCycle === "yearly" ? 1/12 : 1;
-      return sum + (sub.amount * multiplier);
+        sub.billingCycle === "quarterly" ? 1 / 3 :
+        sub.billingCycle === "yearly" ? 1 / 12 : 1;
+      return sum + sub.amount * multiplier;
     }, 0);
 
-    // Calculate conversion rate
-    const totalLeads = await db.lead.count();
-    const convertedLeads = await db.lead.count({ where: { status: "converted" } });
-    const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+    // Sales funnel stats
+    const funnelStats = {
+      totalLeads,
+      newLeads: leadsByProduct.reduce((sum, l) => sum + (l._count?.id || 0), 0),
+      hotLeads: hotLeads.length,
+      convertedLeads,
+      conversionRate: Math.round(conversionRate * 10) / 10,
+    };
 
-    // Generate AI suggestions based on data
+    // Revenue by category
+    const revenueByCategory: Record<string, number> = {};
+    completedPayments.forEach((payment) => {
+      const category = payment.deal?.product?.category || "אחר";
+      revenueByCategory[category] = (revenueByCategory[category] || 0) + payment.amount;
+    });
+
+    // Leads by category this week
+    const leadsByCategory: Record<string, number> = {};
+    for (const lead of leadsByProduct) {
+      if (lead.productId) {
+        const product = products.find((p) => p.id === lead.productId);
+        const category = product?.category || "אחר";
+        leadsByCategory[category] = (leadsByCategory[category] || 0) + (lead._count?.id || 0);
+      }
+    }
+
+    // Contact growth rate
+    const contactGrowthRate = newContactsLastMonth > 0
+      ? ((newContactsThisMonth - newContactsLastMonth) / newContactsLastMonth) * 100
+      : 0;
+
+    // Generate suggestions
     const suggestions = generateSuggestions({
+      productStats,
+      funnelStats,
       coldLeads,
       hotLeads,
       overduePayments,
       stuckDeals,
       failedPayments,
-      conversionRate,
     });
 
-    // Build activity feed
-    const activityFeed = buildActivityFeed({
-      recentPayments,
-      recentLeads,
-      recentContacts,
+    // Filter expiring plans
+    const allActivePlans = await db.paymentPlan.findMany({
+      where: { status: "active" },
+      include: { contact: true, deal: { include: { product: true } } },
     });
+    const expiringPlans = allActivePlans
+      .filter((plan) => plan.paidInstallments >= plan.numberOfPayments - 1)
+      .slice(0, 5);
 
     return NextResponse.json({
       stats: {
         totalContacts,
-        newLeadsThisWeek,
-        todayRevenue: todayPayments._sum.amount || 0,
-        yesterdayRevenue: yesterdayPayments._sum.amount || 0,
-        monthlyRevenue: monthlyRevenue._sum.amount || 0,
-        lastMonthRevenue: lastMonthRevenue._sum.amount || 0,
+        newContactsThisMonth,
+        contactGrowthRate: Math.round(contactGrowthRate * 10) / 10,
+        totalRevenue,
+        thisMonthRevenue,
         mrr: Math.round(mrr),
-        conversionRate: Math.round(conversionRate * 10) / 10,
         activeSubscriptions: activeSubscriptions.length,
+        conversionRate: Math.round(conversionRate * 10) / 10,
       },
+      funnelStats,
+      productStats,
+      topProductsByLeads,
+      topProductsByRevenue,
+      revenueByCategory,
+      leadsByCategory,
       priorityTasks: {
         followUps: followUpsDueToday,
         overduePayments,
         hotLeads,
-        expiringPlans: filteredExpiringPlans,
+        expiringPlans,
       },
       alerts: {
         coldLeads,
@@ -279,7 +311,6 @@ export async function GET() {
         failedPaymentsCount: failedPayments.length,
       },
       suggestions,
-      activityFeed,
     });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
@@ -290,157 +321,96 @@ export async function GET() {
   }
 }
 
-// Generate AI-like suggestions based on data patterns
+// Generate suggestions based on data patterns
 function generateSuggestions(data: {
+  productStats: any[];
+  funnelStats: any;
   coldLeads: any[];
   hotLeads: any[];
   overduePayments: any[];
   stuckDeals: any[];
   failedPayments: any[];
-  conversionRate: number;
 }) {
   const suggestions: Array<{
-    type: "followup" | "upsell" | "retention" | "action";
+    type: "opportunity" | "action" | "insight" | "warning";
     priority: "high" | "medium" | "low";
     title: string;
     description: string;
-    action?: string;
-    contactId?: string;
   }> = [];
 
-  // High priority: Hot leads need immediate attention
+  // Hot leads opportunity
   if (data.hotLeads.length > 0) {
     suggestions.push({
-      type: "followup",
+      type: "opportunity",
       priority: "high",
-      title: `${data.hotLeads.length} לידים חמים ממתינים`,
-      description: "לידים אלה מוכנים לרכישה. צרי קשר היום!",
-      action: "צפייה בלידים חמים",
+      title: `${data.hotLeads.length} לידים חמים מוכנים לסגירה`,
+      description: "לידים אלה הראו עניין גבוה - זה הזמן ליצור קשר!",
     });
   }
 
-  // Failed payments need retry
+  // Products with high leads but low conversion
+  const lowConversionProducts = data.productStats.filter(
+    (p) => p.newLeadsThisWeek > 2 && p.conversionRate < 20
+  );
+  if (lowConversionProducts.length > 0) {
+    suggestions.push({
+      type: "insight",
+      priority: "medium",
+      title: `${lowConversionProducts.length} מוצרים עם המרה נמוכה`,
+      description: "יש עניין במוצרים אלה אבל ההמרה נמוכה - שקלי לבדוק את תהליך המכירה",
+    });
+  }
+
+  // Top performing product
+  const topProduct = data.productStats.sort((a, b) => b.totalRevenue - a.totalRevenue)[0];
+  if (topProduct && topProduct.totalRevenue > 0) {
+    suggestions.push({
+      type: "insight",
+      priority: "low",
+      title: `${topProduct.name} הוא המוצר המוביל`,
+      description: `הכניס ₪${topProduct.totalRevenue.toLocaleString()} - שקלי להגביר שיווק`,
+    });
+  }
+
+  // Failed payments need attention
   if (data.failedPayments.length > 0) {
     suggestions.push({
-      type: "action",
+      type: "warning",
       priority: "high",
       title: `${data.failedPayments.length} תשלומים נכשלו`,
       description: "יש לפנות ללקוחות לעדכון פרטי תשלום",
-      action: "צפייה בתשלומים נכשלים",
     });
   }
 
-  // Overdue payment plans
+  // Overdue payments
   if (data.overduePayments.length > 0) {
     suggestions.push({
       type: "action",
       priority: "high",
       title: `${data.overduePayments.length} תשלומים באיחור`,
       description: "יש לגבות תשלומים שעברו את מועד הפירעון",
-      action: "צפייה בתשלומים באיחור",
     });
   }
 
-  // Cold leads need re-engagement
-  if (data.coldLeads.length > 0) {
+  // Cold leads re-engagement
+  if (data.coldLeads.length > 5) {
     suggestions.push({
-      type: "retention",
+      type: "opportunity",
       priority: "medium",
-      title: `${data.coldLeads.length} לידים מתקררים`,
-      description: "לידים אלה לא היו פעילים מעל שבוע. שקלי לשלוח הודעה",
-      action: "צפייה בלידים קרים",
+      title: `${data.coldLeads.length} לידים להחייאה`,
+      description: "שלחי קמפיין החייאה ללידים שלא היו פעילים",
     });
   }
 
-  // Stuck deals
-  if (data.stuckDeals.length > 0) {
+  // Low conversion rate warning
+  if (data.funnelStats.conversionRate < 15) {
     suggestions.push({
-      type: "followup",
+      type: "insight",
       priority: "medium",
-      title: `${data.stuckDeals.length} עסקאות תקועות`,
-      description: "עסקאות אלה ממתינות מעל שבועיים. כדאי לבדוק מה מעכב",
-      action: "צפייה בעסקאות",
+      title: "שיעור המרה נמוך מהממוצע",
+      description: "שקלי לשפר את תהליך המכירה או את איכות הלידים",
     });
   }
 
-  // Low conversion rate suggestion
-  if (data.conversionRate < 10) {
-    suggestions.push({
-      type: "action",
-      priority: "low",
-      title: "שיעור המרה נמוך",
-      description: "שקלי לשפר את תהליך המכירה או לבדוק את איכות הלידים",
-    });
-  }
-
-  // Best time to contact (mock for now - could be enhanced with real analytics)
-  suggestions.push({
-    type: "followup",
-    priority: "low",
-    title: "הזמן הטוב ביותר ליצירת קשר",
-    description: "על פי נתונים היסטוריים, בין 10:00-12:00 הוא הזמן הטוב ביותר ליצירת קשר",
-  });
-
-  return suggestions.slice(0, 6); // Limit to 6 suggestions
-}
-
-// Build activity feed from recent events
-function buildActivityFeed(data: {
-  recentPayments: any[];
-  recentLeads: any[];
-  recentContacts: any[];
-}) {
-  const activities: Array<{
-    id: string;
-    type: "payment" | "lead" | "contact" | "deal";
-    title: string;
-    description: string;
-    timestamp: Date;
-    icon: string;
-    color: string;
-  }> = [];
-
-  // Add payments
-  data.recentPayments.forEach((payment) => {
-    activities.push({
-      id: `payment-${payment.id}`,
-      type: "payment",
-      title: "תשלום התקבל",
-      description: `${payment.contact.firstName} ${payment.contact.lastName} - ₪${payment.amount}`,
-      timestamp: payment.completedAt || payment.createdAt,
-      icon: "credit-card",
-      color: "text-green-500",
-    });
-  });
-
-  // Add leads
-  data.recentLeads.forEach((lead) => {
-    activities.push({
-      id: `lead-${lead.id}`,
-      type: "lead",
-      title: "ליד חדש",
-      description: `${lead.contact.firstName} ${lead.contact.lastName}${lead.product ? ` - ${lead.product.name}` : ""}`,
-      timestamp: lead.createdAt,
-      icon: "user-plus",
-      color: "text-blue-500",
-    });
-  });
-
-  // Add contacts
-  data.recentContacts.forEach((contact) => {
-    activities.push({
-      id: `contact-${contact.id}`,
-      type: "contact",
-      title: "איש קשר חדש",
-      description: `${contact.firstName} ${contact.lastName}`,
-      timestamp: contact.createdAt,
-      icon: "user",
-      color: "text-teal-500",
-    });
-  });
-
-  // Sort by timestamp and limit
-  return activities
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 15);
+  return suggestions.slice(0, 6);
 }

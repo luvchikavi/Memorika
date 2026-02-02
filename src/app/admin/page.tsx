@@ -8,36 +8,61 @@ import {
   TrendingUp,
   CreditCard,
   Target,
-  AlertTriangle,
   Phone,
   Clock,
   CheckCircle,
   XCircle,
-  UserPlus,
   DollarSign,
   Flame,
   Snowflake,
-  Calendar,
   Lightbulb,
   ArrowUpRight,
   ArrowDownRight,
   RefreshCw,
   Bell,
-  Activity,
+  ShoppingBag,
+  BarChart3,
+  PieChart,
+  Package,
+  Zap,
 } from "lucide-react";
+
+interface ProductStat {
+  id: string;
+  name: string;
+  category: string | null;
+  price: number;
+  newLeadsThisWeek: number;
+  totalDeals: number;
+  paidDeals: number;
+  pendingDeals: number;
+  totalRevenue: number;
+  conversionRate: number;
+}
 
 interface DashboardData {
   stats: {
     totalContacts: number;
-    newLeadsThisWeek: number;
-    todayRevenue: number;
-    yesterdayRevenue: number;
-    monthlyRevenue: number;
-    lastMonthRevenue: number;
+    newContactsThisMonth: number;
+    contactGrowthRate: number;
+    totalRevenue: number;
+    thisMonthRevenue: number;
     mrr: number;
-    conversionRate: number;
     activeSubscriptions: number;
+    conversionRate: number;
   };
+  funnelStats: {
+    totalLeads: number;
+    newLeads: number;
+    hotLeads: number;
+    convertedLeads: number;
+    conversionRate: number;
+  };
+  productStats: ProductStat[];
+  topProductsByLeads: ProductStat[];
+  topProductsByRevenue: ProductStat[];
+  revenueByCategory: Record<string, number>;
+  leadsByCategory: Record<string, number>;
   priorityTasks: {
     followUps: any[];
     overduePayments: any[];
@@ -57,18 +82,17 @@ interface DashboardData {
     priority: string;
     title: string;
     description: string;
-    action?: string;
-  }>;
-  activityFeed: Array<{
-    id: string;
-    type: string;
-    title: string;
-    description: string;
-    timestamp: string;
-    icon: string;
-    color: string;
   }>;
 }
+
+const categoryLabels: Record<string, string> = {
+  course: "קורסים",
+  ebook: "ספרים דיגיטליים",
+  coaching: "אימון אישי",
+  bundle: "חבילות",
+  null: "אחר",
+  undefined: "אחר",
+};
 
 export default function SmartDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -90,7 +114,6 @@ export default function SmartDashboard() {
 
   useEffect(() => {
     fetchDashboard();
-    // Refresh every 5 minutes
     const interval = setInterval(fetchDashboard, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -119,14 +142,6 @@ export default function SmartDashboard() {
     );
   }
 
-  const revenueChange = data.stats.yesterdayRevenue > 0
-    ? ((data.stats.todayRevenue - data.stats.yesterdayRevenue) / data.stats.yesterdayRevenue) * 100
-    : 0;
-
-  const monthlyChange = data.stats.lastMonthRevenue > 0
-    ? ((data.stats.monthlyRevenue - data.stats.lastMonthRevenue) / data.stats.lastMonthRevenue) * 100
-    : 0;
-
   const totalPriorityTasks =
     data.priorityTasks.followUps.length +
     data.priorityTasks.overduePayments.length +
@@ -146,14 +161,15 @@ export default function SmartDashboard() {
             <div>
               <h2 className="text-2xl font-bold mb-2">בוקר טוב, קרן! ☀️</h2>
               <p className="text-white/80">
-                יש לך{" "}
-                <span className="font-bold text-gold">{totalPriorityTasks}</span> משימות
-                דחופות היום
-                {totalAlerts > 0 && (
+                {totalPriorityTasks > 0 ? (
                   <>
-                    {" "}ו-<span className="font-bold text-gold">{totalAlerts}</span> התראות
-                    לטיפול
+                    יש לך <span className="font-bold text-gold">{totalPriorityTasks}</span> משימות דחופות
+                    {totalAlerts > 0 && (
+                      <> ו-<span className="font-bold text-gold">{totalAlerts}</span> התראות</>
+                    )}
                   </>
+                ) : (
+                  "אין משימות דחופות להיום - יום מצוין למכירות!"
                 )}
               </p>
             </div>
@@ -169,25 +185,27 @@ export default function SmartDashboard() {
         <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full -translate-x-32 -translate-y-32" />
       </div>
 
-      {/* Quick Stats */}
+      {/* Key Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="הכנסות היום"
-          value={`₪${data.stats.todayRevenue.toLocaleString()}`}
-          change={revenueChange}
-          compareText="מאתמול"
+          title="הכנסות כוללות"
+          value={`₪${data.stats.totalRevenue.toLocaleString()}`}
+          subtitle={`₪${data.stats.thisMonthRevenue.toLocaleString()} החודש`}
           icon={DollarSign}
           color="bg-green-500/10 text-green-600"
         />
         <StatCard
-          title="לידים חדשים השבוע"
-          value={data.stats.newLeadsThisWeek.toString()}
-          icon={UserPlus}
+          title="אנשי קשר"
+          value={data.stats.totalContacts.toString()}
+          change={data.stats.contactGrowthRate}
+          compareText="מהחודש שעבר"
+          icon={Users}
           color="bg-blue-500/10 text-blue-600"
         />
         <StatCard
           title="שיעור המרה"
           value={`${data.stats.conversionRate}%`}
+          subtitle={`${data.funnelStats.convertedLeads} מתוך ${data.funnelStats.totalLeads} לידים`}
           icon={Target}
           color="bg-purple-500/10 text-purple-600"
         />
@@ -202,77 +220,217 @@ export default function SmartDashboard() {
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Priority Tasks - Takes 2 columns */}
+        {/* Left Column - Products & Sales */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Priority Tasks Today */}
+          {/* Sales Funnel */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Clock className="w-5 h-5 text-gold-dark" />
-                משימות דחופות להיום
-                {totalPriorityTasks > 0 && (
-                  <span className="mr-2 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded-full">
-                    {totalPriorityTasks}
-                  </span>
-                )}
+                <BarChart3 className="w-5 h-5 text-teal" />
+                משפך מכירות
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Hot Leads */}
-              {data.priorityTasks.hotLeads.length > 0 && (
-                <PrioritySection
-                  title="לידים חמים"
-                  icon={<Flame className="w-4 h-4 text-orange-500" />}
-                  items={data.priorityTasks.hotLeads.map((lead) => ({
-                    id: lead.id,
-                    title: `${lead.contact.firstName} ${lead.contact.lastName}`,
-                    subtitle: lead.product?.name || lead.contact.email,
-                    link: `/admin/crm/leads`,
-                  }))}
-                  color="border-orange-200 bg-orange-50"
+            <CardContent>
+              <div className="grid grid-cols-4 gap-4">
+                <FunnelStep
+                  label="סה״כ לידים"
+                  value={data.funnelStats.totalLeads}
+                  color="bg-blue-100 text-blue-700"
                 />
-              )}
-
-              {/* Follow-ups Due */}
-              {data.priorityTasks.followUps.length > 0 && (
-                <PrioritySection
-                  title="פולואפים להיום"
-                  icon={<Phone className="w-4 h-4 text-blue-500" />}
-                  items={data.priorityTasks.followUps.map((lead) => ({
-                    id: lead.id,
-                    title: `${lead.contact.firstName} ${lead.contact.lastName}`,
-                    subtitle: lead.contact.phone || lead.contact.email,
-                    link: `/admin/crm/leads`,
-                  }))}
-                  color="border-blue-200 bg-blue-50"
+                <FunnelStep
+                  label="לידים חדשים"
+                  value={data.funnelStats.newLeads}
+                  subtext="השבוע"
+                  color="bg-purple-100 text-purple-700"
                 />
-              )}
-
-              {/* Overdue Payments */}
-              {data.priorityTasks.overduePayments.length > 0 && (
-                <PrioritySection
-                  title="תשלומים באיחור"
-                  icon={<CreditCard className="w-4 h-4 text-red-500" />}
-                  items={data.priorityTasks.overduePayments.map((plan) => ({
-                    id: plan.id,
-                    title: `${plan.contact.firstName} ${plan.contact.lastName}`,
-                    subtitle: `₪${(plan.totalAmount / plan.numberOfPayments).toFixed(0)} - תשלום ${plan.paidInstallments + 1}/${plan.numberOfPayments}`,
-                    link: `/admin/payments/plans`,
-                  }))}
-                  color="border-red-200 bg-red-50"
+                <FunnelStep
+                  label="לידים חמים"
+                  value={data.funnelStats.hotLeads}
+                  color="bg-orange-100 text-orange-700"
                 />
-              )}
+                <FunnelStep
+                  label="הומרו"
+                  value={data.funnelStats.convertedLeads}
+                  subtext={`${data.funnelStats.conversionRate}%`}
+                  color="bg-green-100 text-green-700"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-              {totalPriorityTasks === 0 && (
-                <div className="text-center py-8 text-navy/50">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                  <p>אין משימות דחופות להיום! 🎉</p>
+          {/* Top Products by Interest */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Zap className="w-5 h-5 text-gold-dark" />
+                מוצרים מובילים לפי עניין השבוע
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {data.topProductsByLeads.length > 0 ? (
+                <div className="space-y-3">
+                  {data.topProductsByLeads.map((product, index) => (
+                    <ProductRow
+                      key={product.id}
+                      rank={index + 1}
+                      product={product}
+                      metric="leads"
+                    />
+                  ))}
                 </div>
+              ) : (
+                <p className="text-center text-navy/50 py-4">אין נתונים להצגה</p>
               )}
             </CardContent>
           </Card>
 
-          {/* Smart Alerts */}
+          {/* Top Products by Revenue */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <DollarSign className="w-5 h-5 text-green-600" />
+                מוצרים מובילים לפי הכנסות
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {data.topProductsByRevenue.filter(p => p.totalRevenue > 0).length > 0 ? (
+                <div className="space-y-3">
+                  {data.topProductsByRevenue
+                    .filter(p => p.totalRevenue > 0)
+                    .map((product, index) => (
+                      <ProductRow
+                        key={product.id}
+                        rank={index + 1}
+                        product={product}
+                        metric="revenue"
+                      />
+                    ))}
+                </div>
+              ) : (
+                <p className="text-center text-navy/50 py-4">אין הכנסות עדיין</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Priority Tasks */}
+          {totalPriorityTasks > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Clock className="w-5 h-5 text-gold-dark" />
+                  משימות דחופות
+                  <span className="mr-2 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded-full">
+                    {totalPriorityTasks}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {data.priorityTasks.hotLeads.length > 0 && (
+                  <PrioritySection
+                    title="לידים חמים"
+                    icon={<Flame className="w-4 h-4 text-orange-500" />}
+                    items={data.priorityTasks.hotLeads.map((lead) => ({
+                      id: lead.id,
+                      title: `${lead.contact.firstName} ${lead.contact.lastName}`,
+                      subtitle: lead.product?.name || lead.contact.email,
+                      link: `/admin/crm/leads`,
+                    }))}
+                    color="border-orange-200 bg-orange-50"
+                  />
+                )}
+                {data.priorityTasks.followUps.length > 0 && (
+                  <PrioritySection
+                    title="פולואפים להיום"
+                    icon={<Phone className="w-4 h-4 text-blue-500" />}
+                    items={data.priorityTasks.followUps.map((lead) => ({
+                      id: lead.id,
+                      title: `${lead.contact.firstName} ${lead.contact.lastName}`,
+                      subtitle: lead.contact.phone || lead.contact.email,
+                      link: `/admin/crm/leads`,
+                    }))}
+                    color="border-blue-200 bg-blue-50"
+                  />
+                )}
+                {data.priorityTasks.overduePayments.length > 0 && (
+                  <PrioritySection
+                    title="תשלומים באיחור"
+                    icon={<CreditCard className="w-4 h-4 text-red-500" />}
+                    items={data.priorityTasks.overduePayments.map((plan) => ({
+                      id: plan.id,
+                      title: `${plan.contact.firstName} ${plan.contact.lastName}`,
+                      subtitle: `₪${(plan.totalAmount / plan.numberOfPayments).toFixed(0)} - תשלום ${plan.paidInstallments + 1}/${plan.numberOfPayments}`,
+                      link: `/admin/payments/plans`,
+                    }))}
+                    color="border-red-200 bg-red-50"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="space-y-6">
+          {/* Interest by Category */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <PieChart className="w-5 h-5 text-purple-600" />
+                עניין לפי קטגוריה
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(data.leadsByCategory).length > 0 ? (
+                <div className="space-y-3">
+                  {Object.entries(data.leadsByCategory)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([category, count]) => (
+                      <CategoryBar
+                        key={category}
+                        label={categoryLabels[category] || category}
+                        value={count}
+                        total={Object.values(data.leadsByCategory).reduce((a, b) => a + b, 0)}
+                        color="bg-purple-500"
+                      />
+                    ))}
+                </div>
+              ) : (
+                <p className="text-center text-navy/50 py-4">אין נתונים השבוע</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Revenue by Category */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ShoppingBag className="w-5 h-5 text-green-600" />
+                הכנסות לפי קטגוריה
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.keys(data.revenueByCategory).length > 0 ? (
+                <div className="space-y-3">
+                  {Object.entries(data.revenueByCategory)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([category, amount]) => (
+                      <div key={category} className="flex items-center justify-between">
+                        <span className="text-sm text-navy">
+                          {categoryLabels[category] || category}
+                        </span>
+                        <span className="font-medium text-navy">
+                          ₪{amount.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-center text-navy/50 py-4">אין הכנסות עדיין</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Alerts */}
           {totalAlerts > 0 && (
             <Card>
               <CardHeader className="pb-3">
@@ -322,70 +480,18 @@ export default function SmartDashboard() {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Lightbulb className="w-5 h-5 text-gold-dark" />
-                  המלצות חכמות
+                  המלצות
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {data.suggestions.map((suggestion, index) => (
+                <div className="space-y-3">
+                  {data.suggestions.slice(0, 4).map((suggestion, index) => (
                     <SuggestionCard key={index} suggestion={suggestion} />
                   ))}
                 </div>
               </CardContent>
             </Card>
           )}
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Monthly Overview */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="w-5 h-5 text-teal" />
-                סיכום חודשי
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-cream">
-                <div>
-                  <p className="text-sm text-navy/60">הכנסות החודש</p>
-                  <p className="text-xl font-bold text-navy">
-                    ₪{data.stats.monthlyRevenue.toLocaleString()}
-                  </p>
-                </div>
-                <ChangeIndicator value={monthlyChange} />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-cream">
-                <div>
-                  <p className="text-sm text-navy/60">סה״כ אנשי קשר</p>
-                  <p className="text-xl font-bold text-navy">{data.stats.totalContacts}</p>
-                </div>
-                <Users className="w-8 h-8 text-teal/30" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Activity Feed */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="w-5 h-5 text-sage" />
-                פעילות אחרונה
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {data.activityFeed.length > 0 ? (
-                  data.activityFeed.map((activity) => (
-                    <ActivityItem key={activity.id} activity={activity} />
-                  ))
-                ) : (
-                  <p className="text-center text-navy/50 py-4">אין פעילות אחרונה</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Quick Links */}
           <Card>
@@ -396,7 +502,7 @@ export default function SmartDashboard() {
               <div className="grid grid-cols-2 gap-2">
                 <QuickLink href="/admin/crm/contacts" icon={Users} label="אנשי קשר" />
                 <QuickLink href="/admin/crm/leads" icon={Target} label="לידים" />
-                <QuickLink href="/admin/crm/deals" icon={DollarSign} label="עסקאות" />
+                <QuickLink href="/admin/sales/products" icon={Package} label="מוצרים" />
                 <QuickLink href="/admin/payments" icon={CreditCard} label="תשלומים" />
               </div>
             </CardContent>
@@ -449,7 +555,7 @@ function StatCard({
   );
 }
 
-// Change Indicator Component
+// Change Indicator
 function ChangeIndicator({ value, size = "md" }: { value: number; size?: "sm" | "md" }) {
   const isPositive = value >= 0;
   const Icon = isPositive ? ArrowUpRight : ArrowDownRight;
@@ -464,7 +570,96 @@ function ChangeIndicator({ value, size = "md" }: { value: number; size?: "sm" | 
   );
 }
 
-// Priority Section Component
+// Funnel Step
+function FunnelStep({
+  label,
+  value,
+  subtext,
+  color,
+}: {
+  label: string;
+  value: number;
+  subtext?: string;
+  color: string;
+}) {
+  return (
+    <div className={`text-center p-3 rounded-lg ${color}`}>
+      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-xs font-medium mt-1">{label}</p>
+      {subtext && <p className="text-xs opacity-70">{subtext}</p>}
+    </div>
+  );
+}
+
+// Product Row
+function ProductRow({
+  rank,
+  product,
+  metric,
+}: {
+  rank: number;
+  product: ProductStat;
+  metric: "leads" | "revenue";
+}) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-cream/50 hover:bg-cream transition-colors">
+      <div className="w-8 h-8 rounded-full bg-teal/10 flex items-center justify-center text-sm font-bold text-teal">
+        {rank}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-navy truncate">{product.name}</p>
+        <p className="text-xs text-navy/50">
+          {categoryLabels[product.category || "null"]} • ₪{product.price.toLocaleString()}
+        </p>
+      </div>
+      <div className="text-left">
+        {metric === "leads" ? (
+          <>
+            <p className="text-sm font-bold text-navy">{product.newLeadsThisWeek}</p>
+            <p className="text-xs text-navy/50">לידים חדשים</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-bold text-green-600">₪{product.totalRevenue.toLocaleString()}</p>
+            <p className="text-xs text-navy/50">{product.paidDeals} מכירות</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Category Bar
+function CategoryBar({
+  label,
+  value,
+  total,
+  color,
+}: {
+  label: string;
+  value: number;
+  total: number;
+  color: string;
+}) {
+  const percentage = total > 0 ? (value / total) * 100 : 0;
+
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-navy">{label}</span>
+        <span className="font-medium text-navy">{value}</span>
+      </div>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className={`h-full ${color} rounded-full transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Priority Section
 function PrioritySection({
   title,
   icon,
@@ -507,7 +702,7 @@ function PrioritySection({
   );
 }
 
-// Alert Item Component
+// Alert Item
 function AlertItem({
   icon,
   title,
@@ -536,7 +731,7 @@ function AlertItem({
   );
 }
 
-// Suggestion Card Component
+// Suggestion Card
 function SuggestionCard({
   suggestion,
 }: {
@@ -545,19 +740,19 @@ function SuggestionCard({
     priority: string;
     title: string;
     description: string;
-    action?: string;
   };
 }) {
-  const priorityColors = {
-    high: "border-r-red-500",
-    medium: "border-r-yellow-500",
-    low: "border-r-green-500",
+  const typeColors = {
+    opportunity: "border-r-green-500 bg-green-50",
+    action: "border-r-red-500 bg-red-50",
+    insight: "border-r-blue-500 bg-blue-50",
+    warning: "border-r-yellow-500 bg-yellow-50",
   };
 
   return (
     <div
-      className={`p-3 rounded-lg bg-cream border-r-4 ${
-        priorityColors[suggestion.priority as keyof typeof priorityColors] || "border-r-gray-300"
+      className={`p-3 rounded-lg border-r-4 ${
+        typeColors[suggestion.type as keyof typeof typeColors] || "border-r-gray-300 bg-gray-50"
       }`}
     >
       <p className="text-sm font-medium text-navy mb-1">{suggestion.title}</p>
@@ -566,49 +761,7 @@ function SuggestionCard({
   );
 }
 
-// Activity Item Component
-function ActivityItem({
-  activity,
-}: {
-  activity: {
-    id: string;
-    type: string;
-    title: string;
-    description: string;
-    timestamp: string;
-    icon: string;
-    color: string;
-  };
-}) {
-  const IconComponent = {
-    "credit-card": CreditCard,
-    "user-plus": UserPlus,
-    user: Users,
-  }[activity.icon] || Activity;
-
-  const colorClass = {
-    "text-green-500": "bg-green-100 text-green-600",
-    "text-blue-500": "bg-blue-100 text-blue-600",
-    "text-teal-500": "bg-teal/10 text-teal",
-  }[activity.color] || "bg-gray-100 text-gray-600";
-
-  const timeAgo = formatTimeAgo(new Date(activity.timestamp));
-
-  return (
-    <div className="flex items-start gap-3">
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-        <IconComponent className="w-4 h-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-navy">{activity.title}</p>
-        <p className="text-xs text-navy/60 truncate">{activity.description}</p>
-        <p className="text-xs text-navy/40 mt-1">{timeAgo}</p>
-      </div>
-    </div>
-  );
-}
-
-// Quick Link Component
+// Quick Link
 function QuickLink({
   href,
   icon: Icon,
@@ -627,19 +780,4 @@ function QuickLink({
       <span className="text-xs font-medium text-navy">{label}</span>
     </Link>
   );
-}
-
-// Format time ago helper
-function formatTimeAgo(date: Date): string {
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return "עכשיו";
-  if (minutes < 60) return `לפני ${minutes} דקות`;
-  if (hours < 24) return `לפני ${hours} שעות`;
-  if (days < 7) return `לפני ${days} ימים`;
-  return date.toLocaleDateString("he-IL");
 }
