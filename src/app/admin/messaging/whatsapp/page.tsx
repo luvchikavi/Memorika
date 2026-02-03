@@ -222,11 +222,11 @@ export default function WhatsAppPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-green-500 rounded-lg text-white">
-          <WhatsAppIcon className="h-8 w-8" />
+        <div className="p-2 sm:p-3 bg-green-500 rounded-lg text-white">
+          <WhatsAppIcon className="h-6 w-6 sm:h-8 sm:w-8" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-navy">WhatsApp</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-navy">WhatsApp</h2>
           <p className="text-navy/60">שלח הודעות ללקוחות דרך WhatsApp</p>
         </div>
       </div>
@@ -248,8 +248,8 @@ export default function WhatsAppPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Search and Filter */}
-              <div className="flex gap-4">
-                <div className="relative flex-1">
+              <div className="flex flex-wrap gap-4">
+                <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-navy/40" />
                   <Input
                     placeholder="חיפוש..."
@@ -288,7 +288,7 @@ export default function WhatsAppPage() {
               </div>
 
               {/* Contacts List */}
-              <div className="max-h-96 overflow-y-auto border rounded-lg divide-y">
+              <div className="max-h-64 sm:max-h-96 overflow-y-auto border rounded-lg divide-y">
                 {filteredContacts.length === 0 ? (
                   <div className="p-8 text-center text-navy/50">
                     אין אנשי קשר עם מספר טלפון
@@ -297,7 +297,7 @@ export default function WhatsAppPage() {
                   filteredContacts.map((contact) => (
                     <label
                       key={contact.id}
-                      className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-cream/50 ${
+                      className={`flex items-center gap-3 p-2 sm:p-3 cursor-pointer hover:bg-cream/50 ${
                         selectedContacts.has(contact.id) ? "bg-teal/10" : ""
                       }`}
                     >
@@ -305,7 +305,7 @@ export default function WhatsAppPage() {
                         type="checkbox"
                         checked={selectedContacts.has(contact.id)}
                         onChange={() => toggleContact(contact.id)}
-                        className="w-4 h-4 rounded"
+                        className="w-5 h-5 rounded"
                       />
                       <div className="flex-1">
                         <p className="font-medium text-navy">

@@ -194,7 +194,7 @@ export default function LeadsKanbanPage() {
               key={column.id}
               className={cn(
                 "flex-shrink-0 transition-all duration-200",
-                isCollapsed ? "w-12" : "w-72"
+                isCollapsed ? "w-12" : "w-64 sm:w-72"
               )}
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDragLeave={handleDragLeave}
@@ -235,7 +235,7 @@ export default function LeadsKanbanPage() {
               {!isCollapsed && (
                 <div
                   className={cn(
-                    "bg-cream/50 rounded-b-lg p-2 min-h-[500px] space-y-2 transition-colors",
+                    "bg-cream/50 rounded-b-lg p-2 min-h-[300px] sm:min-h-[500px] space-y-2 transition-colors",
                     isDragOver && "bg-teal/10"
                   )}
                 >
@@ -308,7 +308,7 @@ function LeadCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        "bg-white rounded-lg p-3 shadow-sm border border-blush/50 cursor-grab active:cursor-grabbing transition-all hover:shadow-md",
+        "bg-white rounded-lg p-2 sm:p-3 shadow-sm border border-blush/50 cursor-grab active:cursor-grabbing transition-all hover:shadow-md",
         isDragging && "opacity-50 rotate-2 scale-105"
       )}
     >
@@ -387,7 +387,7 @@ function LeadDetailSidebar({
   const currentColumn = columns.find((c) => c.id === lead.status);
 
   return (
-    <div className="fixed inset-y-0 left-0 z-50 w-96 bg-white shadow-xl border-r border-blush overflow-y-auto">
+    <div className="fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-white shadow-xl border-r border-blush overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 bg-white z-10 flex items-center justify-between p-4 border-b border-blush">
         <h3 className="text-lg font-bold text-navy">פרטי ליד</h3>

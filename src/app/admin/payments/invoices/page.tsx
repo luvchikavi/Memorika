@@ -194,7 +194,7 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-navy">חשבוניות וקבלות</h2>
           <p className="text-navy/60">
@@ -227,7 +227,7 @@ export default function InvoicesPage() {
             </div>
 
             {/* Type Filter */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setTypeFilter(null)}
                 className={cn(
@@ -281,13 +281,13 @@ export default function InvoicesPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-cream/50 border-b border-blush">
-                    <th className="text-right p-4 text-sm font-medium text-navy">מספר</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">סוג</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">לקוח</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">סכום</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">תאריך</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">סטטוס</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">פעולות</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">מספר</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy hidden sm:table-cell">סוג</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">לקוח</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">סכום</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy hidden sm:table-cell">תאריך</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">סטטוס</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -300,17 +300,17 @@ export default function InvoicesPage() {
                         key={invoice.id}
                         className="border-b border-blush/50 hover:bg-cream/30 transition-colors"
                       >
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <span className="font-mono text-sm text-navy">
                             {invoice.invoiceNumber}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4 hidden sm:table-cell">
                           <span className="text-sm text-navy">
                             {typeLabels[invoice.type] || invoice.type}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-teal/20 flex items-center justify-center text-teal text-xs font-medium">
                               {invoice.contact.firstName[0]}
@@ -324,7 +324,7 @@ export default function InvoicesPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div>
                             <span className="font-bold text-navy">
                               {formatPrice(invoice.totalAmount)}
@@ -334,12 +334,12 @@ export default function InvoicesPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4 hidden sm:table-cell">
                           <span className="text-sm text-navy">
                             {new Date(invoice.issueDate).toLocaleDateString("he-IL")}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
@@ -350,7 +350,7 @@ export default function InvoicesPage() {
                             {statusInfo.label}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setSelectedInvoice(invoice)}
@@ -394,7 +394,7 @@ export default function InvoicesPage() {
 
       {/* Invoice Detail Sidebar */}
       {selectedInvoice && (
-        <div className="fixed inset-y-0 left-0 z-50 w-96 bg-white shadow-xl border-r border-blush overflow-y-auto">
+        <div className="fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-white shadow-xl border-r border-blush overflow-y-auto">
           <div className="sticky top-0 bg-white z-10 flex items-center justify-between p-4 border-b border-blush">
             <h3 className="text-lg font-bold text-navy">פרטי חשבונית</h3>
             <button onClick={() => setSelectedInvoice(null)}>

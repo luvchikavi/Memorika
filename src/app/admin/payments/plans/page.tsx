@@ -274,7 +274,7 @@ export default function PaymentPlansPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-navy">תוכניות תשלום</h2>
           <p className="text-navy/60">
@@ -308,7 +308,7 @@ export default function PaymentPlansPage() {
             </div>
 
             {/* Status Filter */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setStatusFilter(null)}
                 className={cn(
@@ -362,13 +362,13 @@ export default function PaymentPlansPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-cream/50 border-b border-blush">
-                    <th className="text-right p-4 text-sm font-medium text-navy">לקוח</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">מוצר</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">סה״כ</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">התקדמות</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">תשלום הבא</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">סטטוס</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">פעולות</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">לקוח</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">מוצר</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">סה״כ</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">התקדמות</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">תשלום הבא</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">סטטוס</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -382,7 +382,7 @@ export default function PaymentPlansPage() {
                         key={plan.id}
                         className="border-b border-blush/50 hover:bg-cream/30 transition-colors"
                       >
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-teal/20 flex items-center justify-center text-teal text-xs font-medium">
                               {plan.contact.firstName[0]}
@@ -396,12 +396,12 @@ export default function PaymentPlansPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <span className="text-sm text-navy">
                             {plan.deal.product.nameHe || plan.deal.product.name}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div>
                             <span className="font-bold text-navy">
                               {formatPrice(plan.totalAmount)}
@@ -412,7 +412,7 @@ export default function PaymentPlansPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -430,7 +430,7 @@ export default function PaymentPlansPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           {plan.nextPaymentDate && plan.status === "active" ? (
                             <div className="flex items-center gap-2 text-sm text-navy">
                               <Calendar className="h-4 w-4 text-navy/50" />
@@ -440,7 +440,7 @@ export default function PaymentPlansPage() {
                             <span className="text-xs text-navy/40">-</span>
                           )}
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
@@ -451,7 +451,7 @@ export default function PaymentPlansPage() {
                             {statusInfo.label}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setSelectedPlan(plan)}
@@ -490,7 +490,7 @@ export default function PaymentPlansPage() {
 
       {/* Plan Detail Sidebar */}
       {selectedPlan && !showPaymentModal && (
-        <div className="fixed inset-y-0 left-0 z-50 w-96 bg-white shadow-xl border-r border-blush overflow-y-auto">
+        <div className="fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-white shadow-xl border-r border-blush overflow-y-auto">
           <div className="sticky top-0 bg-white z-10 flex items-center justify-between p-4 border-b border-blush">
             <h3 className="text-lg font-bold text-navy">פרטי תוכנית</h3>
             <button onClick={() => setSelectedPlan(null)}>
@@ -778,7 +778,7 @@ export default function PaymentPlansPage() {
               {formData.dealId && (
                 <div className="bg-cream rounded-lg p-4">
                   <p className="text-sm text-navy/60">גובה כל תשלום:</p>
-                  <p className="text-xl font-bold text-navy">
+                  <p className="text-lg sm:text-xl font-bold text-navy">
                     {formatPrice(
                       (deals.find((d) => d.id === formData.dealId)?.finalAmount -
                         (deals.find((d) => d.id === formData.dealId)?.paidAmount || 0)) /

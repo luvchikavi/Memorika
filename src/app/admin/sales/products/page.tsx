@@ -230,9 +230,9 @@ export default function ProductsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-navy">מוצרים וקורסים</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-navy">מוצרים וקורסים</h2>
           <p className="text-navy/60">נהל את המוצרים, המחירים והקורסים שלך</p>
         </div>
         <Button
@@ -245,7 +245,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -253,7 +253,7 @@ export default function ProductsPage() {
                 <Package className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-navy">{products.length}</p>
+                <p className="text-lg sm:text-2xl font-bold text-navy">{products.length}</p>
                 <p className="text-sm text-navy/60">סה״כ מוצרים</p>
               </div>
             </div>
@@ -267,7 +267,7 @@ export default function ProductsPage() {
                 <Check className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-navy">
+                <p className="text-lg sm:text-2xl font-bold text-navy">
                   {products.filter((p) => p.isActive).length}
                 </p>
                 <p className="text-sm text-navy/60">פעילים</p>
@@ -283,7 +283,7 @@ export default function ProductsPage() {
                 <Star className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-navy">
+                <p className="text-lg sm:text-2xl font-bold text-navy">
                   {products.filter((p) => p.isFeatured).length}
                 </p>
                 <p className="text-sm text-navy/60">מודגשים</p>
@@ -299,7 +299,7 @@ export default function ProductsPage() {
                 <Layers className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-navy">
+                <p className="text-lg sm:text-2xl font-bold text-navy">
                   {products.reduce((sum, p) => sum + (p._count?.deals || 0), 0)}
                 </p>
                 <p className="text-sm text-navy/60">מכירות</p>
@@ -322,7 +322,7 @@ export default function ProductsPage() {
                 className="pr-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 variant={filterCategory === null ? "primary" : "outline"}
                 size="sm"
@@ -349,7 +349,7 @@ export default function ProductsPage() {
       {/* Product Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-navy/50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <Card className="w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>
                 {editingProduct ? "עריכת מוצר" : "הוספת מוצר חדש"}
@@ -357,7 +357,7 @@ export default function ProductsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>שם באנגלית *</Label>
                     <Input
@@ -390,7 +390,7 @@ export default function ProductsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <Label>מחיר *</Label>
                     <Input
@@ -487,7 +487,7 @@ export default function ProductsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredProducts.map((product) => {
             const categoryInfo = getCategoryInfo(product.category);
             const CategoryIcon = categoryInfo.icon;

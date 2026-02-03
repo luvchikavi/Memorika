@@ -420,13 +420,13 @@ export default function ContactsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-blush bg-cream/50">
-                      <th className="text-right p-4 text-sm font-medium text-navy/70">שם</th>
-                      <th className="text-right p-4 text-sm font-medium text-navy/70">אימייל</th>
-                      <th className="text-right p-4 text-sm font-medium text-navy/70">טלפון</th>
-                      <th className="text-right p-4 text-sm font-medium text-navy/70">סוג</th>
-                      <th className="text-right p-4 text-sm font-medium text-navy/70">מקור</th>
-                      <th className="text-right p-4 text-sm font-medium text-navy/70">סטטוס</th>
-                      <th className="text-right p-4 text-sm font-medium text-navy/70">פעולות</th>
+                      <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy/70">שם</th>
+                      <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy/70 hidden sm:table-cell">אימייל</th>
+                      <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy/70 hidden sm:table-cell">טלפון</th>
+                      <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy/70 hidden md:table-cell">סוג</th>
+                      <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy/70 hidden sm:table-cell">מקור</th>
+                      <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy/70">סטטוס</th>
+                      <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy/70">פעולות</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -437,9 +437,9 @@ export default function ContactsPage() {
                           key={contact.id}
                           className="border-b border-blush/50 hover:bg-cream/30 transition-colors"
                         >
-                          <td className="p-4">
+                          <td className="p-2 sm:p-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-teal/20 flex items-center justify-center text-teal font-medium">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-teal/20 flex items-center justify-center text-teal font-medium">
                                 {contact.firstName[0]}{contact.lastName[0]}
                               </div>
                               <div>
@@ -455,7 +455,7 @@ export default function ContactsPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="p-4">
+                          <td className="p-2 sm:p-4 hidden sm:table-cell">
                             <a
                               href={`mailto:${contact.email}`}
                               className="text-sm text-navy hover:text-teal flex items-center gap-1"
@@ -464,7 +464,7 @@ export default function ContactsPage() {
                               {contact.email}
                             </a>
                           </td>
-                          <td className="p-4">
+                          <td className="p-2 sm:p-4 hidden sm:table-cell">
                             {contact.phone ? (
                               <a
                                 href={`tel:${contact.phone}`}
@@ -477,7 +477,7 @@ export default function ContactsPage() {
                               <span className="text-sm text-navy/40">-</span>
                             )}
                           </td>
-                          <td className="p-4">
+                          <td className="p-2 sm:p-4 hidden md:table-cell">
                             <div className="relative type-dropdown-container">
                               <button
                                 onClick={() => setOpenTypeDropdown(openTypeDropdown === contact.id ? null : contact.id)}
@@ -511,14 +511,14 @@ export default function ContactsPage() {
                               )}
                             </div>
                           </td>
-                          <td className="p-4">
+                          <td className="p-2 sm:p-4 hidden sm:table-cell">
                             <span className="text-sm text-navy/70">
                               {sourceOptions.find((s) => s.value === contact.source)?.label ||
                                 contact.source ||
                                 "-"}
                             </span>
                           </td>
-                          <td className="p-4">
+                          <td className="p-2 sm:p-4">
                             <span
                               className={cn(
                                 "text-xs px-2 py-1 rounded-full",
@@ -529,25 +529,25 @@ export default function ContactsPage() {
                               {status.label}
                             </span>
                           </td>
-                          <td className="p-4">
+                          <td className="p-2 sm:p-4">
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => setSelectedContact(contact)}
-                                className="p-1 text-navy/50 hover:text-navy transition-colors"
+                                className="p-2 text-navy/50 hover:text-navy transition-colors"
                                 title="צפה"
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => openEditModal(contact)}
-                                className="p-1 text-navy/50 hover:text-navy transition-colors"
+                                className="p-2 text-navy/50 hover:text-navy transition-colors"
                                 title="ערוך"
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => handleDelete(contact.id)}
-                                className="p-1 text-navy/50 hover:text-red-500 transition-colors"
+                                className="p-2 text-navy/50 hover:text-red-500 transition-colors"
                                 title="מחק"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -563,7 +563,7 @@ export default function ContactsPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between p-4 border-t border-blush">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-4 border-t border-blush">
                   <p className="text-sm text-navy/60">
                     מציג {(currentPage - 1) * itemsPerPage + 1}-
                     {Math.min(currentPage * itemsPerPage, filteredContacts.length)} מתוך{" "}
@@ -600,7 +600,7 @@ export default function ContactsPage() {
       {/* Add/Edit Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg sm:max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-blush">
               <h3 className="text-lg font-bold text-navy">
                 {editingContact ? "עריכת איש קשר" : "הוספת איש קשר"}
@@ -611,7 +611,7 @@ export default function ContactsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="שם פרטי"
                   value={formData.firstName}
@@ -765,7 +765,7 @@ export default function ContactsPage() {
 
       {/* Contact Detail Sidebar */}
       {selectedContact && (
-        <div className="fixed inset-y-0 left-0 z-50 w-96 bg-white shadow-xl border-r border-blush">
+        <div className="fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-white shadow-xl border-r border-blush">
           <div className="flex items-center justify-between p-4 border-b border-blush">
             <h3 className="text-lg font-bold text-navy">פרטי איש קשר</h3>
             <button onClick={() => setSelectedContact(null)}>

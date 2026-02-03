@@ -157,9 +157,9 @@ export default function SmartDashboard() {
       {/* Welcome Header */}
       <div className="bg-gradient-to-l from-teal to-teal-dark rounded-2xl p-6 lg:p-8 text-white relative overflow-hidden">
         <div className="relative z-10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-bold mb-2">בוקר טוב, קרן! ☀️</h2>
+              <h2 className="text-xl sm:text-2xl font-bold mb-2">בוקר טוב, קרן! ☀️</h2>
               <p className="text-white/80">
                 {totalPriorityTasks > 0 ? (
                   <>
@@ -231,7 +231,7 @@ export default function SmartDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <FunnelStep
                   label="סה״כ לידים"
                   value={data.funnelStats.totalLeads}
@@ -533,11 +533,11 @@ function StatCard({
 }) {
   return (
     <Card>
-      <CardContent className="p-4">
+      <CardContent className="p-3 sm:p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <p className="text-xs text-navy/60 mb-1">{title}</p>
-            <p className="text-xl font-bold text-navy">{value}</p>
+            <p className="text-lg sm:text-xl font-bold text-navy">{value}</p>
             {change !== undefined && (
               <div className="flex items-center gap-1 mt-1">
                 <ChangeIndicator value={change} size="sm" />
@@ -546,7 +546,7 @@ function StatCard({
             )}
             {subtitle && <p className="text-xs text-navy/50 mt-1">{subtitle}</p>}
           </div>
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${color}`}>
             <Icon className="w-5 h-5" />
           </div>
         </div>
@@ -584,7 +584,7 @@ function FunnelStep({
 }) {
   return (
     <div className={`text-center p-3 rounded-lg ${color}`}>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-lg sm:text-2xl font-bold">{value}</p>
       <p className="text-xs font-medium mt-1">{label}</p>
       {subtext && <p className="text-xs opacity-70">{subtext}</p>}
     </div>
@@ -602,7 +602,7 @@ function ProductRow({
   metric: "leads" | "revenue";
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-cream/50 hover:bg-cream transition-colors">
+    <div className="flex items-center gap-3 p-2 sm:p-3 rounded-lg bg-cream/50 hover:bg-cream transition-colors">
       <div className="w-8 h-8 rounded-full bg-teal/10 flex items-center justify-center text-sm font-bold text-teal">
         {rank}
       </div>

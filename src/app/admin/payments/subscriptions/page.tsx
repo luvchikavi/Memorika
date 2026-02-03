@@ -295,7 +295,7 @@ export default function SubscriptionsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-navy">מנויים</h2>
           <p className="text-navy/60">
@@ -310,7 +310,7 @@ export default function SubscriptionsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -319,7 +319,7 @@ export default function SubscriptionsPage() {
               </div>
               <div>
                 <p className="text-sm text-navy/60">פעילים</p>
-                <p className="text-xl font-bold text-navy">
+                <p className="text-lg sm:text-xl font-bold text-navy">
                   {subscriptions.filter((s) => s.status === "active").length}
                 </p>
               </div>
@@ -334,7 +334,7 @@ export default function SubscriptionsPage() {
               </div>
               <div>
                 <p className="text-sm text-navy/60">הכנסה חודשית (MRR)</p>
-                <p className="text-xl font-bold text-navy">{formatPrice(totalMRR)}</p>
+                <p className="text-lg sm:text-xl font-bold text-navy">{formatPrice(totalMRR)}</p>
               </div>
             </div>
           </CardContent>
@@ -347,7 +347,7 @@ export default function SubscriptionsPage() {
               </div>
               <div>
                 <p className="text-sm text-navy/60">מושהים</p>
-                <p className="text-xl font-bold text-navy">
+                <p className="text-lg sm:text-xl font-bold text-navy">
                   {subscriptions.filter((s) => s.status === "paused").length}
                 </p>
               </div>
@@ -362,7 +362,7 @@ export default function SubscriptionsPage() {
               </div>
               <div>
                 <p className="text-sm text-navy/60">סה״כ הכנסות</p>
-                <p className="text-xl font-bold text-navy">
+                <p className="text-lg sm:text-xl font-bold text-navy">
                   {formatPrice(subscriptions.reduce((sum, s) => sum + s.totalRevenue, 0))}
                 </p>
               </div>
@@ -440,13 +440,13 @@ export default function SubscriptionsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-cream/50 border-b border-blush">
-                    <th className="text-right p-4 text-sm font-medium text-navy">לקוח</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">מנוי</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">סכום</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">תדירות</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">חיוב הבא</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">סטטוס</th>
-                    <th className="text-right p-4 text-sm font-medium text-navy">פעולות</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">לקוח</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">מנוי</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">סכום</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy hidden sm:table-cell">תדירות</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy hidden md:table-cell">חיוב הבא</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">סטטוס</th>
+                    <th className="text-right p-2 sm:p-4 text-sm font-medium text-navy">פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -459,7 +459,7 @@ export default function SubscriptionsPage() {
                         key={subscription.id}
                         className="border-b border-blush/50 hover:bg-cream/30 transition-colors"
                       >
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-teal/20 flex items-center justify-center text-teal text-xs font-medium">
                               {subscription.contact.firstName[0]}
@@ -473,21 +473,21 @@ export default function SubscriptionsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <span className="text-sm text-navy">{subscription.name}</span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <span className="font-bold text-navy">
                             {formatPrice(subscription.amount)}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4 hidden sm:table-cell">
                           <span className="text-sm text-navy">
                             {billingCycleLabels[subscription.billingCycle] ||
                               subscription.billingCycle}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4 hidden md:table-cell">
                           {subscription.nextBillingDate && subscription.status === "active" ? (
                             <div className="flex items-center gap-2 text-sm text-navy">
                               <Calendar className="h-4 w-4 text-navy/50" />
@@ -497,7 +497,7 @@ export default function SubscriptionsPage() {
                             <span className="text-xs text-navy/40">-</span>
                           )}
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
@@ -508,7 +508,7 @@ export default function SubscriptionsPage() {
                             {statusInfo.label}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-2 sm:p-4">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setSelectedSubscription(subscription)}
@@ -543,7 +543,7 @@ export default function SubscriptionsPage() {
 
       {/* Subscription Detail Sidebar */}
       {selectedSubscription && !showChargeModal && (
-        <div className="fixed inset-y-0 left-0 z-50 w-96 bg-white shadow-xl border-r border-blush overflow-y-auto">
+        <div className="fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-white shadow-xl border-r border-blush overflow-y-auto">
           <div className="sticky top-0 bg-white z-10 flex items-center justify-between p-4 border-b border-blush">
             <h3 className="text-lg font-bold text-navy">פרטי מנוי</h3>
             <button onClick={() => setSelectedSubscription(null)}>
